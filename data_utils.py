@@ -6,6 +6,8 @@ import copy
 import mri_utils
 from fft_utils import numpy_2_complex
 import numpy as np
+import h5py
+
 DEFAULT_OPTS = {'root_dir':'data/knee',
 				'name':'coronal_pd', 
 				'patients':[1,2,3,4,5,6,7,8,9,10],
@@ -40,6 +42,7 @@ class KneeDataset(Dataset):
 
 		self.filename = []
 		self.coil_sens_list = []
+		self.coil_ref_list = []
 		data_dir = self.root_dir / options['name']
 
 		# Load raw data and coil sensitivities name
@@ -55,8 +58,11 @@ class KneeDataset(Dataset):
 			for i in slice_no:
 				slice_dir = patient_dir / 'rawdata{}.mat'.format(i)
 				self.filename.append(str(slice_dir))
-				coil_sens_dir = patient_dir / 'espirit{}.mat'.format(i)
+				# coil_sens_dir = patient_dir / 'espirit{}.mat'.format(i)
+				coil_sens_dir = patient_dir / 'es_sens{}.mat'.format(i)
+				coil_ref_dir = patient_dir / 'es_ref{}.mat'.format(i)
 				self.coil_sens_list.append(str(coil_sens_dir))
+				self.coil_ref_list.append(str(coil_ref_dir))
 
 		
 		self.mask_dir = data_dir/ 'masks'
@@ -71,15 +77,25 @@ class KneeDataset(Dataset):
 		mask = copy.deepcopy(self.mask)
 		filename = self.filename[idx]
 		coil_sens = self.coil_sens_list[idx]
+		coil_ref = self.coil_ref_list[idx]
 
 		raw_data = loadmat(filename)
 		f = np.ascontiguousarray(np.transpose(raw_data['rawdata'],(2,0,1))).astype(np.complex64)
+		# f = np.ascontiguousarray(np.transpose(raw_data['rawdata'],(2,0,1))).view('complex')
 		
 		coil_sens_data = loadmat(coil_sens)
+		coil_sens_ref = loadmat(coil_ref)
+		# with h5py.File(coil_sens, 'r') as fi:
+		# 	coil_sens_data = fi['sensitivities'][()]
+		# 	coil_sens_ref = fi['reference'][()]
+			
 		c = np.ascontiguousarray(np.transpose(coil_sens_data['sensitivities'],(2,0,1))).astype(np.complex64)
+		# c = np.ascontiguousarray(np.transpose(coil_sens_data,(2,0,1))).astype(np.complex128)
+		# c = np.ascontiguousarray(np.transpose(coil_sens_data['sensitivities'],(2,0,1))).view('complex')
 
 		if self.options['load_target']:
-			ref = coil_sens_data['reference'].astype(np.complex64)
+			# ref = coil_sens_data['reference'].astype(np.complex64)
+			ref = coil_sens_ref['reference'].view('complex')
 		else:
 			ref = np.zeros_like(mask,dtype=np.complex64)
 
@@ -126,7 +142,7 @@ class KneeDataset(Dataset):
 		if self.options['load_target']:
 			ref /= norm
 		else:
-			ref = np.zeros_like(input_0)
+			ref = np.zeros_like(input0)
 
 		input0 = numpy_2_complex(input0)
 		f = numpy_2_complex(f)

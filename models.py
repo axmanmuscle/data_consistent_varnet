@@ -116,8 +116,8 @@ class RBFActivation(nn.Module):
         # weighted_gaussian = self.w_0 * gaussian
         # out = torch.sum(weighted_gaussian,axis=-1,keepdim=False)
         if not self.mu.device == x.device:
-        	self.mu = self.mu.to(x.device)
-        	self.sigma = self.sigma.to(x.device)
+          self.mu = self.mu.to(x.device)
+          self.sigma = self.sigma.to(x.device)
 
         # out = torch.zeros(x.shape,dtype=torch.float32,device=x.device)
         # for i in range(self.options['num_act_weights']):
@@ -178,7 +178,8 @@ class VnMriReconCell(nn.Module):
         u_pad = u_pad.unsqueeze(1)
         coil_imgs = complex_mul(u_pad, coil_sens) # NxCxHxWx2
         
-        Fu = fftc2d(coil_imgs) #
+        # Fu = fftc2d(coil_imgs) #
+        Fu = fft2c_new(coil_imgs)
         
         mask = sampling_mask.unsqueeze(1) # Nx1xHxW
         mask = mask.unsqueeze(4) # Nx1xHxWx1
@@ -212,7 +213,8 @@ class VnMriReconCell(nn.Module):
         mask = mask.unsqueeze(4) # Nx1xHxWx1
         mask = mask.repeat([1,1,1,1,2]) # Nx1xHxWx2
 
-        Finv = ifftc2d(mask*f) # NxCxHxWx2
+        # Finv = ifftc2d(mask*f) # NxCxHxWx2
+        Finv = ifft2c_new(mask*f) # NxCxHxWx2
         # multiply coil images with sensitivities and sum up over channels
         img = torch.sum(complex_mul(Finv,conj(coil_sens)),1)
 
@@ -296,7 +298,7 @@ class VariationalNetwork(pl.LightningModule):
         ref_img = batch['reference']
         
         if self.options['loss_type'] == 'complex':
-            loss = F.mse_loss(recon_img,ref_img)
+            loss = F.mse_loss(recon_img.float(),ref_img.float())
         elif self.options['loss_type'] == 'magnitude':
             recon_img_mag = torch_abs(recon_img)
             ref_img_mag = torch_abs(ref_img)    
@@ -328,13 +330,13 @@ class VariationalNetwork(pl.LightningModule):
     
 
     def configure_optimizers(self):
-        if self.options['optimizer'] == 'adam':
-            return torch.optim.Adam(self.parameters(),lr=self.options['lr'])
-        elif self.options['optimizer'] == 'sgd':
-        	return torch.optim.SGD(self.parameters(),lr=self.options['lr'],momentum=self.options['momentum'])
-        elif self.options['optimizer'] == 'rmsprop':
-        	return torch.optim.RMSprop(self.parameters(),lr=self.options['lr'],momentum=self.options['momentum'])
-        elif self.options['optimizer'] == 'iipg':
-            iipg = IIPG(torch.optim.SGD,self.parameters(),lr=self.options['lr'],momentum=self.options['momentum'])
-            return iipg
+      if self.options['optimizer'] == 'adam':
+        return torch.optim.Adam(self.parameters(),lr=self.options['lr'])
+      elif self.options['optimizer'] == 'sgd':
+        return torch.optim.SGD(self.parameters(),lr=self.options['lr'],momentum=self.options['momentum'])
+      elif self.options['optimizer'] == 'rmsprop':
+        return torch.optim.RMSprop(self.parameters(),lr=self.options['lr'],momentum=self.options['momentum'])
+      elif self.options['optimizer'] == 'iipg':
+        iipg = IIPG(torch.optim.SGD,self.parameters(),lr=self.options['lr'],momentum=self.options['momentum'])
+      return iipg
 

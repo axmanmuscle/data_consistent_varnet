@@ -10,7 +10,9 @@ from scipy.io import savemat
 import os
 import matplotlib.pyplot as plt
 import scipy
-from skimage.measure import compare_ssim
+from skimage.metrics import structural_similarity as compare_ssim
+# from skimage.measure import compare_ssim
+## functionality moved in old version of skimage
 
 
 def removeFEOversampling(src):

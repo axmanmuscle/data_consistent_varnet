@@ -42,18 +42,24 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args['gpus']
 # setting up network
 varnet = VariationalNetwork(**args)
 
+myDevice = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+varnet = varnet.to(myDevice)
+torch.backends.cudnn.enabled = False
+
 # setting up data loader
 dataset = KneeDataset(**args)
 if args['mode'] == 'train':
 	shuffle = True
 else:
 	shuffle = False
-dataloader = DataLoader(dataset,batch_size=args['batch_size'],shuffle=shuffle,num_workers=8,pin_memory=True)
+dataloader = DataLoader(dataset,batch_size=args['batch_size'],shuffle=shuffle,num_workers=8,pin_memory=False)
 
 # start training
 save_dir = Path(args['save_dir'])
 save_dir.mkdir(parents=True,exist_ok=True)
 trainer = pl.Trainer(gpus=len(args['gpus'].split(',')),max_epochs=args['epoch'])
+# trainer = pl.Trainer(gpus=None,max_epochs=args['epoch'])
+
 
 if args['mode'] == 'train':
 	trainer.fit(varnet,dataloader)
