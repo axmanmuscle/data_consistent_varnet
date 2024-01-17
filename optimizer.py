@@ -28,7 +28,7 @@ class IIPG(Optimizer):
 			else:
 				if param.shape[0] > 1:
 					# convolutional kernel
-					param.data = zero_mean_norm_ball(param_data, axis=(1,2,3,4))
+					param.data = zero_mean_norm_ball(param.data, axis=(1,2,3,4))
 
 		return loss
 

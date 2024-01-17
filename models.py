@@ -291,7 +291,9 @@ class VariationalNetwork(pl.LightningModule):
 
     def forward(self,inputs):
         output = self.cell_list(inputs)
-        return output['u_t']
+        output_ut = output['u_t']
+        output_ut[output['sampling_mask']] = output['f']
+        return output_ut
     
     def training_step(self, batch, batch_idx):
         recon_img = self(batch)
