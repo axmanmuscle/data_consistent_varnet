@@ -204,10 +204,10 @@ def fftc2d(x):
     centered fft transformed of x
 
     """
-    x = ifftshift(x, axis=(-3,-2))
+    x = ifftshift(x, dim=(-3,-2))
     # x = torch.fft.fft(x,2,normalized=True)
     x = torch.fft.rfftn(x, dim=(-2, -3), norm="ortho")
-    x = fftshift(x,axis=[-2,-3])
+    x = fftshift(x,dim=[-2,-3])
     return x
 
 def ifftc2d(x):
@@ -226,10 +226,10 @@ def ifftc2d(x):
 
     """
 
-    x = ifftshift(x,axis=[-2,-3])
+    x = ifftshift(x,dim=[-2,-3])
     # x = torch.fft.ifft(x,2,normalized=True)
     x = torch.fft.irfftn(x, dim=(-2, -3), norm="ortho")
-    x = fftshift(x,axis=[-2,-3])
+    x = fftshift(x,dim=[-2,-3])
     return x
 
 def torch_abs(x):

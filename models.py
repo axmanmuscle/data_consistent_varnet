@@ -8,6 +8,7 @@ from misc_utils import *
 import copy
 from pathlib import Path
 from optimizer import IIPG
+import mri_utils
 
 DEFAULT_OPTS = {'kernel_size':11,
                 'features_in':1,
@@ -291,9 +292,36 @@ class VariationalNetwork(pl.LightningModule):
 
     def forward(self,inputs):
         output = self.cell_list(inputs)
-        output_ut = output['u_t']
-        output_ut[output['sampling_mask']] = output['f']
-        return output_ut
+        u_t = output['u_t']
+        f = output['f']
+        c = output['coil_sens']
+        m = output['sampling_mask']
+
+        ## to enforce data consistency we need to multiply the output of the network
+        ## by the sensitivity maps to make the array [1 x ncoils x height x width x 2]
+        ## then fourier transform across the [-3 -2] dimensions (or use np.view_as_complex, etc)
+        ## then replace values by k-space from f
+        ## then perform Roemer recon again
+        ## this is now the same shape as before
+
+        utc = u_t * c
+        futc = fft2c_new(utc)
+        ncoils = futc.shape[1]
+        boolmask = m == 1.
+        boolmask = boolmask.squeeze()
+        for idx in range(ncoils):
+            coili = futc[0, idx, :, :, :]
+            kdata_i = f[0, idx, :, :, :]
+            coili[boolmask] = kdata_i[boolmask]
+            futc[0, idx, :, :, :] = coili
+
+        tmp1 = torch.view_as_complex(futc.squeeze()) * m.squeeze()
+        tmp2 = torch.view_as_real(tmp1)
+        tmp3 = tmp2.unsqueeze(0)
+        tmp4 = ifft2c_new(tmp3)
+
+        final_out = torch.sum(tmp4*torch.conj(c), dim=1)
+        return final_out
     
     def training_step(self, batch, batch_idx):
         recon_img = self(batch)

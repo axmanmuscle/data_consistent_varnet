@@ -66,6 +66,7 @@ if args['mode'] == 'train':
 	torch.save(varnet.state_dict(), str(save_dir/'varnet.h5'))
 elif args['mode'] == 'eval':
 	varnet.load_state_dict(torch.load(str(save_dir/'varnet.h5')))
-	trainer.test(varnet,test_dataloaders=dataloader)
+	# trainer.test(varnet,test_dataloaders=dataloader)
+	trainer.test(varnet,dataloaders=dataloader)
 
 
