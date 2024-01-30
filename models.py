@@ -304,23 +304,29 @@ class VariationalNetwork(pl.LightningModule):
         ## then perform Roemer recon again
         ## this is now the same shape as before
 
-        utc = u_t * c
-        futc = fft2c_new(utc)
-        ncoils = futc.shape[1]
-        boolmask = m == 1.
-        boolmask = boolmask.squeeze()
-        for idx in range(ncoils):
-            coili = futc[0, idx, :, :, :]
-            kdata_i = f[0, idx, :, :, :]
-            coili[boolmask] = kdata_i[boolmask]
-            futc[0, idx, :, :, :] = coili
+        # print(f"forward method: self.options['data_consistent'] {self.options['data_consistent']}")
+        if self.options['data_consistent']:
+          utc = u_t * c
+          futc = fft2c_new(utc)
+          ncoils = futc.shape[1]
+          boolmask = m == 1.
+          boolmask = boolmask.squeeze()
+          for idx in range(ncoils):
+              coili = futc[0, idx, :, :, :]
+              kdata_i = f[0, idx, :, :, :]
+              coili[boolmask] = kdata_i[boolmask]
+              futc[0, idx, :, :, :] = coili
 
-        tmp1 = torch.view_as_complex(futc.squeeze()) * m.squeeze()
-        tmp2 = torch.view_as_real(tmp1)
-        tmp3 = tmp2.unsqueeze(0)
-        tmp4 = ifft2c_new(tmp3)
+          # tmp1 = torch.view_as_complex(futc.squeeze()) * m.squeeze()
+          # tmp2 = torch.view_as_real(tmp1)
+          # tmp3 = tmp2.unsqueeze(0)
+          # tmp4 = ifft2c_new(tmp3)
+              
+          tmp = ifft2c_new(futc)
 
-        final_out = torch.sum(tmp4*torch.conj(c), dim=1)
+          final_out = torch.sum(tmp*torch.conj(c), dim=1)
+        else:
+          final_out = u_t
         return final_out
     
     def training_step(self, batch, batch_idx):

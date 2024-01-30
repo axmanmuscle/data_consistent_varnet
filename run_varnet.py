@@ -32,6 +32,7 @@ parser.add_argument('--save_dir',         type=str,   default='exp/basic_varnet'
 parser.add_argument('--momentum',         type=float, default=0.,                    help='momentum for the optimizer')
 parser.add_argument('--loss_weight',      type=float, default=1.,                    help='weight for the loss function')
 parser.add_argument('--error_scale',      type=float, default=1.,                    help='how much to magnify the error map for display purpose')
+parser.add_argument('--data_consistent',      type=bool, default=False,                    help='whether to add the data consistency layer or not')
 
 args = parser.parse_args()
 print_options(parser,args)
