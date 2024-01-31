@@ -306,7 +306,8 @@ class VariationalNetwork(pl.LightningModule):
 
         # print(f"forward method: self.options['data_consistent'] {self.options['data_consistent']}")
         if self.options['data_consistent']:
-          utc = u_t * c
+          # utc = u_t * c
+          utc = complex_mul(u_t, c)
           futc = fft2c_new(utc)
           ncoils = futc.shape[1]
           boolmask = m == 1.
@@ -324,7 +325,7 @@ class VariationalNetwork(pl.LightningModule):
               
           tmp = ifft2c_new(futc)
 
-          final_out = torch.sum(tmp*torch.conj(c), dim=1)
+          final_out = torch.sum(complex_mul(tmp,conj(c)), dim=1)
         else:
           final_out = u_t
         return final_out
