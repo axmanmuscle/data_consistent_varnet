@@ -85,3 +85,7 @@ need to train inconsistent on axial
 then we take those two networks
 do reconstructions/metrics with axial t2
 do reconstructions/metrics with coronal
+
+
+the command run was
+python run_varnet.py --mode train --root_dir *DATA* --name axial_t2 --save_dir *SAVEDIR* --sampling_pattern cartesian --data_consistent False --epoch 30
