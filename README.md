@@ -65,3 +65,23 @@ Visualization of the learnt kernel and the activation function can be run with t
 
 ## To-do
 - Implement quantitative metrics (PSNR, SSIM)
+
+# McManus To-Do
+put ssim and psnr in models.variational network -> test_step
+have it output and then run test
+
+## 0514
+so i need to test metrics with and without data consistency
+
+so i need the following
+
+a network trained with data consistency on axial t2
+a network trained without data consistency on axial t2
+
+coronal? idk
+well i already have a consistent and inconsistent network trained on coronal
+need to train inconsistent on axial
+
+then we take those two networks
+do reconstructions/metrics with axial t2
+do reconstructions/metrics with coronal

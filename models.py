@@ -10,6 +10,10 @@ from pathlib import Path
 from optimizer import IIPG
 import mri_utils
 
+from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import peak_signal_noise_ratio as psnr
+import pandas as pd
+
 DEFAULT_OPTS = {'kernel_size':11,
                 'features_in':1,
                 'features_out':24,
@@ -140,7 +144,7 @@ class VnMriReconCell(nn.Module):
         if options['do_prox_map']:
             conv_kernel = zero_mean_norm_ball(conv_kernel,axis=(1,2,3,4))
 
-
+        conv_kernel = conv_kernel.to(torch.float32)
         self.conv_kernel = torch.nn.Parameter(conv_kernel)
 
         if self.options['activation'] == 'rbf':
@@ -288,6 +292,7 @@ class VariationalNetwork(pl.LightningModule):
 
         self.cell_list = nn.Sequential(*cell_list)
         self.log_img_count = 0
+        self.test_metrics = []  # Initialize a list to store metrics
 
 
     def forward(self,inputs):
@@ -350,20 +355,68 @@ class VariationalNetwork(pl.LightningModule):
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
 
+    # def test_step(self, batch, batch_idx):
+    #     recon_img = self(batch)
+    #     ref_img = batch['reference']
+    #     recon_img_mag = torch_abs(recon_img)
+    #     ref_img_mag = torch_abs(ref_img)
+    #     loss = F.mse_loss(recon_img_mag,ref_img_mag)
+    #     img_save_dir = Path(self.options['save_dir']) / ('eval_result_img_' + self.options['name'])
+    #     img_save_dir.mkdir(parents=True,exist_ok=True)
+    #     save_recon(batch['u_t'],recon_img,ref_img,batch_idx,img_save_dir,self.options['error_scale'],True)
+    #     return {'test_loss':loss}
+
+    # def on_test_epoch_end(self, outputs):
+    #     test_loss_mean = torch.stack([x['test_loss'] for x in outputs]).mean()
+    #     return {'test_loss': test_loss_mean}
+
     def test_step(self, batch, batch_idx):
         recon_img = self(batch)
         ref_img = batch['reference']
         recon_img_mag = torch_abs(recon_img)
         ref_img_mag = torch_abs(ref_img)
-        loss = F.mse_loss(recon_img_mag,ref_img_mag)
+        loss = F.mse_loss(recon_img_mag, ref_img_mag)
+        
+        metrics = []
+        
+        ## something wrong with the sizes here
+        ## oh well
+        recon_i = np.squeeze(recon_img_mag.cpu().detach().numpy())
+        ref_i = np.squeeze(ref_img_mag.cpu().detach().numpy())
+        ssim_i = ssim(ref_i, recon_i, data_range=ref_i.max())
+        psnr_i = psnr(ref_i, recon_i, data_range=ref_i.max())
+        metrics.append({
+            'batch_idx': batch_idx,
+            'ssim': ssim_i,
+            'psnr': psnr_i,
+            'mse': loss.cpu().item()
+        })
+        
         img_save_dir = Path(self.options['save_dir']) / ('eval_result_img_' + self.options['name'])
-        img_save_dir.mkdir(parents=True,exist_ok=True)
-        save_recon(batch['u_t'],recon_img,ref_img,batch_idx,img_save_dir,self.options['error_scale'],True)
-        return {'test_loss':loss}
+        img_save_dir.mkdir(parents=True, exist_ok=True)
+        save_recon(batch['u_t'], recon_img, ref_img, batch_idx, img_save_dir, self.options['error_scale'], True)
+        
+        self.test_metrics.extend(metrics)  # Store metrics in self.test_metrics
+        
+        return {'test_loss': loss}
 
-    def test_epoch_end(self, outputs):
-        test_loss_mean = torch.stack([x['test_loss'] for x in outputs]).mean()
-        return {'test_loss': test_loss_mean}
+    def on_test_epoch_end(self):
+        test_loss_mean = torch.tensor([x['test_loss'] for x in self.trainer.callback_metrics.get('test_step_outputs', [])]).mean()
+        ssim_list = [m['ssim'] for m in self.test_metrics]
+        psnr_list = [m['psnr'] for m in self.test_metrics]
+        test_ssim_mean = np.mean(ssim_list) if ssim_list else 0.0
+        test_psnr_mean = np.mean(psnr_list) if psnr_list else 0.0
+        
+        save_dir = Path(self.options['save_dir']) / ('eval_result_' + self.options['name'])
+        save_dir.mkdir(parents=True, exist_ok=True)
+        csv_path = save_dir / 'test_metrics.csv'
+        df = pd.DataFrame(self.test_metrics)
+        df.to_csv(csv_path, index=False)
+        print(f"Metrics saved to {csv_path}")
+        
+        self.test_metrics = []  # Clear metrics after saving
+        
+        return {'test_loss': test_loss_mean, 'test_ssim': test_ssim_mean, 'test_psnr': test_psnr_mean}   
     
 
     def configure_optimizers(self):

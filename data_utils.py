@@ -139,6 +139,9 @@ class KneeDataset(Dataset):
 		f /= norm
 		input0 /= norm
 
+		f = f.astype(np.complex64)
+		input0 = input0.astype(np.complex64)
+
 		if self.options['load_target']:
 			ref /= norm
 		else:

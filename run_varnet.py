@@ -58,8 +58,9 @@ dataloader = DataLoader(dataset,batch_size=args['batch_size'],shuffle=shuffle,nu
 # start training
 save_dir = Path(args['save_dir'])
 save_dir.mkdir(parents=True,exist_ok=True)
-trainer = pl.Trainer(gpus=len(args['gpus'].split(',')),max_epochs=args['epoch'])
+# trainer = pl.Trainer(gpus=len(args['gpus'].split(',')),max_epochs=args['epoch'])
 # trainer = pl.Trainer(gpus=None,max_epochs=args['epoch'])
+trainer = pl.Trainer(accelerator='auto',max_epochs=args['epoch'])
 
 
 if args['mode'] == 'train':

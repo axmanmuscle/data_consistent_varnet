@@ -1,0 +1,4 @@
+python run_varnet.py --root_dir /mnt/h/varnet_data/ --name axial_t2 --save_dir exp/data_consistent --sampling_pattern cartesian
+
+conda activate ml
+python run_varnet.py --mode eval --root_dir /mnt/h/varnet_data/ --name axial_t2 --save_dir metric_test --sampling_pattern cartesian

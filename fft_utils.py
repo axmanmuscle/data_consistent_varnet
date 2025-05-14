@@ -187,7 +187,7 @@ def ifft2c_new(data: torch.Tensor, norm: str = "ortho") -> torch.Tensor:
     )
     data = fftshift(data, dim=[-3, -2])
 
-    return data
+    return data.float()
 
 def fftc2d(x):
     """
