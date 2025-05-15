@@ -89,3 +89,28 @@ do reconstructions/metrics with coronal
 
 the command run was
 python run_varnet.py --mode train --root_dir *DATA* --name axial_t2 --save_dir *SAVEDIR* --sampling_pattern cartesian --data_consistent False --epoch 30
+
+
+EVAL stuff
+axial network
+
+consistent
+
+python run_varnet.py --mode eval --root_dir /mnt/h/varnet_data --name axial_t2 --save_dir paper_metrics/axial/consistent --sampling_pattern cartesian --data_consistent True 
+
+inconsistent
+
+python run_varnet.py --mode eval --root_dir /mnt/h/varnet_data --name axial_t2 --save_dir paper_metrics/axial/inconsistent --sampling_pattern cartesian 
+
+coronal network
+
+consistent 
+
+python run_varnet.py --mode eval --root_dir /mnt/h/varnet_data --name coronal_pd_fs --save_dir paper_metrics/coronal/consistent --sampling_pattern cartesian --data_consistent True 
+
+inconsistent
+
+python run_varnet.py --mode eval --root_dir /mnt/h/varnet_data --name coronal_pd_fs --save_dir paper_metrics/coronal/inconsistent --sampling_pattern cartesian 
+
+
+Have to retrain the consistent network with coronal pd fs to get accurate statistics
